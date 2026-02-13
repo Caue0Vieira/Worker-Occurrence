@@ -33,13 +33,13 @@ class ProcessResolveOccurrenceJob extends BaseProcessJob
         $occurrence = $occurrenceService->findByIdForUpdate($occurrenceId);
 
         if ($occurrence === null) {
-            throw new InvalidArgumentException("Occurrence not found: {$this->occurrenceId}");
+            throw new InvalidArgumentException("Occurrence not found: $this->occurrenceId");
         }
 
         $currentStatus = OccurrenceStatus::fromString($occurrence->statusCode());
         if ($currentStatus === OccurrenceStatus::RESOLVED) {
             throw new DomainException(
-                "A ocorrência '{$this->occurrenceId}' já está resolvida e não pode ser resolvida novamente"
+                "A ocorrência '$this->occurrenceId' já está resolvida e não pode ser resolvida novamente"
             );
         }
     }
