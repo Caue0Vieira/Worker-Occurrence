@@ -12,5 +12,7 @@ interface DispatchRepositoryInterface
     public function save(Dispatch $dispatch): Dispatch;
 
     public function findById(Uuid $id): ?Dispatch;
+
+    public function findByOccurrenceIdAndResourceCode(Uuid $occurrenceId, string $resourceCode): ?Dispatch;
 }
 

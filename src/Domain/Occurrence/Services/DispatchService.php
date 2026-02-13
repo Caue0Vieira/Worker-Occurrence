@@ -9,6 +9,7 @@ use Domain\Audit\Repositories\AuditLoggerInterface;
 use Domain\Occurrence\Entities\Dispatch;
 use Domain\Occurrence\Enums\DispatchStatus;
 use Domain\Occurrence\Repositories\DispatchRepositoryInterface;
+use Domain\Shared\Exceptions\DomainException;
 use Domain\Shared\ValueObjects\Uuid;
 use Exception;
 
@@ -21,7 +22,23 @@ readonly class DispatchService
     {
     }
 
+    /**
+     * @throws DomainException
+     * @throws Exception
+     */
     public function createDispatch(Uuid $occurrenceId, string $resourceCode): Dispatch {
+        // Validação de negócio: verificar se já existe despacho com mesmo resource_code na ocorrência
+        $existingDispatch = $this->dispatchRepository->findByOccurrenceIdAndResourceCode(
+            occurrenceId: $occurrenceId,
+            resourceCode: $resourceCode
+        );
+
+        if ($existingDispatch !== null) {
+            throw new DomainException(
+                "Já existe um despacho com o resource_code '{$resourceCode}' na ocorrência '{$occurrenceId->toString()}'"
+            );
+        }
+
         $dispatch = Dispatch::create(
             occurrenceId: $occurrenceId,
             resourceCode: $resourceCode
@@ -33,6 +50,14 @@ readonly class DispatchService
     public function findById(Uuid $id): ?Dispatch
     {
         return $this->dispatchRepository->findById($id);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function findByOccurrenceIdAndResourceCode(Uuid $occurrenceId, string $resourceCode): ?Dispatch
+    {
+        return $this->dispatchRepository->findByOccurrenceIdAndResourceCode($occurrenceId, $resourceCode);
     }
 
     /**

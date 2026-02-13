@@ -69,6 +69,25 @@ class DispatchRepository implements DispatchRepositoryInterface
         return $row ? Dispatch::fromArray((array)$row) : null;
     }
 
+    /**
+     * @throws Exception
+     */
+    public function findByOccurrenceIdAndResourceCode(Uuid $occurrenceId, string $resourceCode): ?Dispatch
+    {
+        $row = DB::table('dispatches as d')
+            ->select(
+                'd.*',
+                'ds.name as status_name',
+                'ds.is_active as status_is_active'
+            )
+            ->leftJoin('dispatch_status as ds', 'd.status_code', '=', 'ds.code')
+            ->where('d.occurrence_id', $occurrenceId->toString())
+            ->where('d.resource_code', $resourceCode)
+            ->first();
+
+        return $row ? Dispatch::fromArray((array)$row) : null;
+    }
+
     private function exists(Uuid $id): bool
     {
         return DB::table('dispatches')
