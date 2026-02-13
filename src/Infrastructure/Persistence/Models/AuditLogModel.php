@@ -20,8 +20,6 @@ class AuditLogModel extends Model
         'aggregate_id',
         'event_type',
         'event_data',
-        'user_id',
-        'ip_address',
         'occurred_at',
     ];
 

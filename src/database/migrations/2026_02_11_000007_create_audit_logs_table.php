@@ -17,8 +17,6 @@ return new class extends Migration
             $table->uuid('aggregate_id');
             $table->string('event_type', 100);
             $table->json('event_data');
-            $table->string('user_id', 100)->nullable();
-            $table->string('ip_address', 45)->nullable();
             $table->timestamp('occurred_at');
             $table->timestamps();
 

@@ -10,12 +10,6 @@ use Illuminate\Support\Facades\Log;
 use Infrastructure\Persistence\Models\AuditLogModel;
 use Throwable;
 
-/**
- * Serviço de Auditoria
- *
- * Implementa o registro de auditoria usando a tabela audit_logs.
- * Este é um ADAPTADOR na Arquitetura Hexagonal.
- */
 class AuditLogger implements AuditLoggerInterface
 {
     public function log(string $entityType, string $entityId, string $action, ?array $before = null, ?array $after = null, array $meta = []): void
@@ -34,8 +28,6 @@ class AuditLogger implements AuditLoggerInterface
                 'aggregate_id' => $entityId,
                 'event_type' => $action,
                 'event_data' => $eventData,
-                'user_id' => $meta['user_id'] ?? null,
-                'ip_address' => $meta['ip_address'] ?? null,
                 'occurred_at' => now(),
             ]);
 
