@@ -23,15 +23,17 @@ abstract class BaseProcessJob implements ShouldQueue
 
     public int $tries = 3;
     public array $backoff = [10, 30, 60];
+    public string $idempotencyKey;
 
     public function __construct(
-        public string $idempotencyKey,
+        string $idempotencyKey,
         public string $source,
         public string $type,
         public string $scopeKey,
         public array $payload,
         public ?string $commandId = null,
     ) {
+        $this->idempotencyKey = $idempotencyKey;
     }
 
     public function handle(

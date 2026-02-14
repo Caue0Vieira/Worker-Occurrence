@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CommandInboxModel extends Model
 {
-    protected $table = 'command_inbox';
+    public $table = 'command_inbox';
 
     public $incrementing = false;
 

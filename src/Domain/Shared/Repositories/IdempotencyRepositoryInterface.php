@@ -47,13 +47,5 @@ interface IdempotencyRepositoryInterface
      * @param string $errorMessage Mensagem de erro
      */
     public function markAsFailed(string $commandId, string $errorMessage): void;
-
-    /**
-     * Obtém o resultado de um comando processado
-     *
-     * @param string $commandId ID do comando
-     * @return array Resultado do processamento
-     */
-    public function getResult(string $commandId): array;
 }
 

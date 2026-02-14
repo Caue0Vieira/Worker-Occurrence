@@ -9,6 +9,7 @@ use Infrastructure\Console\Commands\CommandProcessor;
 class ProcessUpdateDispatchStatusJob extends BaseProcessJob
 {
     public function __construct(
+        string $idempotencyKey,
         string $source,
         string $type,
         string $scopeKey,
@@ -17,8 +18,7 @@ class ProcessUpdateDispatchStatusJob extends BaseProcessJob
         public string $statusCode,
         ?string $commandId = null,
     ) {
-        // Este job não usa idempotencyKey, então passa string vazia
-        parent::__construct('', $source, $type, $scopeKey, $payload, $commandId);
+        parent::__construct($idempotencyKey, $source, $type, $scopeKey, $payload, $commandId);
     }
 
     protected function processCommand(CommandProcessor $processor, string $commandId): array

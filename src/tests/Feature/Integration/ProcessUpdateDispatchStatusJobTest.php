@@ -45,6 +45,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         ]);
 
         $job = new ProcessUpdateDispatchStatusJob(
+            idempotencyKey: 'idem-update-status-001',
             source: 'internal_system',
             type: 'update_dispatch_status',
             scopeKey: $dispatchId,
@@ -91,6 +92,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         ]);
 
         $job = new ProcessUpdateDispatchStatusJob(
+            idempotencyKey: 'idem-update-status-002',
             source: 'internal_system',
             type: 'update_dispatch_status',
             scopeKey: $dispatchId,
@@ -129,6 +131,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         ]);
 
         $job = new ProcessUpdateDispatchStatusJob(
+            idempotencyKey: 'idem-update-status-003',
             source: 'internal_system',
             type: 'update_dispatch_status',
             scopeKey: $dispatchId,

@@ -5,23 +5,25 @@ declare(strict_types=1);
 namespace Infrastructure\Persistence\Repositories;
 
 use Application\Exceptions\IdempotencyConflictException;
+use Domain\Idempotency\Enums\CommandStatus;
 use Domain\Shared\Repositories\IdempotencyRepositoryInterface;
 use Domain\Shared\ValueObjects\IdempotencyDecision;
 use Domain\Shared\ValueObjects\Uuid;
 use Illuminate\Support\Facades\DB;
 use Infrastructure\Persistence\Models\CommandInboxModel;
 use InvalidArgumentException;
+use JsonSerializable;
 use JsonException;
-use RuntimeException;
 
-class IdempotencyRepository implements IdempotencyRepositoryInterface
+final class IdempotencyRepository implements IdempotencyRepositoryInterface
 {
     /**
      * @throws JsonException
      */
     public function checkOrRegister(string $idempotencyKey, string $source, string $type, string $scopeKey, array $payload, ?string $commandId = null): IdempotencyDecision
     {
-        $payloadHash = hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
+        $normalizedPayload = $this->normalizePayloadForHash($payload);
+        $payloadHash = hash('sha256', $normalizedPayload);
         $ttlInSeconds = (int)config('api.idempotency.ttl', 86400);
         $expiresAt = now()->addSeconds($ttlInSeconds);
         $normalizedIdempotencyKey = $this->normalizeIdempotencyKey($idempotencyKey);
@@ -43,21 +45,14 @@ class IdempotencyRepository implements IdempotencyRepositoryInterface
                     ->first();
 
                 if ($existingById !== null) {
+                    $status = CommandStatus::fromString($existingById->status);
                     return new IdempotencyDecision(
                         commandId: $existingById->id,
-                        shouldProcess: $existingById->status === 'pending',
+                        shouldProcess: $status === CommandStatus::PENDING,
                         currentStatus: $existingById->status
                     );
                 }
             }
-
-            CommandInboxModel::query()
-                ->where('idempotency_key', $normalizedIdempotencyKey)
-                ->where('type', $type)
-                ->where('scope_key', $scopeKey)
-                ->whereNotNull('expires_at')
-                ->where('expires_at', '<', now())
-                ->delete();
 
             $existing = CommandInboxModel::query()
                 ->where('idempotency_key', $normalizedIdempotencyKey)
@@ -71,9 +66,10 @@ class IdempotencyRepository implements IdempotencyRepositoryInterface
                     throw IdempotencyConflictException::withPayloadMismatch($normalizedIdempotencyKey, $scopeKey);
                 }
 
+                $status = CommandStatus::fromString($existing->status);
                 return new IdempotencyDecision(
                     commandId: $existing->id,
-                    shouldProcess: $existing->status === 'pending',
+                    shouldProcess: $status === CommandStatus::PENDING,
                     currentStatus: $existing->status
                 );
             }
@@ -88,14 +84,14 @@ class IdempotencyRepository implements IdempotencyRepositoryInterface
                 'scope_key' => $scopeKey,
                 'payload_hash' => $payloadHash,
                 'payload' => $payload,
-                'status' => 'pending',
+                'status' => CommandStatus::PENDING->value,
                 'expires_at' => $expiresAt,
             ]);
 
             return new IdempotencyDecision(
                 commandId: $resolvedCommandId,
                 shouldProcess: true,
-                currentStatus: 'pending'
+                currentStatus: CommandStatus::PENDING->value
             );
         });
     }
@@ -104,22 +100,60 @@ class IdempotencyRepository implements IdempotencyRepositoryInterface
     {
         $trimmed = trim($idempotencyKey);
 
-        if ($trimmed !== '') {
-            return $trimmed;
+        if ($trimmed === '') {
+            throw new InvalidArgumentException(
+                'Idempotency key cannot be empty. Client must provide a valid idempotency key.'
+            );
         }
 
-        return 'auto-' . Uuid::generate()->toString();
+        return $trimmed;
+    }
+
+    /**
+     * Normaliza payload para hash determinístico.
+     *
+     * Reordena apenas arrays associativos. Listas numéricas preservam a ordem.
+     *
+     * @throws JsonException
+     */
+    private function normalizePayloadForHash(array $payload): string
+    {
+        $normalized = $this->normalizeForHash($payload);
+        return json_encode($normalized, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Normaliza recursivamente para hash determinístico.
+     */
+    private function normalizeForHash(array $value): array
+    {
+        if (!array_is_list($value)) {
+            ksort($value, SORT_STRING);
+        }
+
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->normalizeForHash($item);
+            }
+        }
+
+        return $value;
     }
 
     public function markAsProcessed(string $commandId, mixed $result): void
     {
+        $normalizedResult = match (true) {
+            is_array($result) => $result,
+            $result instanceof JsonSerializable => $result->jsonSerialize(),
+            is_object($result) && method_exists($result, 'toArray') => $result->toArray(),
+            default => $result,
+        };
+
         CommandInboxModel::query()
             ->where('id', $commandId)
             ->update([
-                'status' => 'processed',
-                'result' => is_object($result) && method_exists($result, 'toArray')
-                    ? $result->toArray()
-                    : $result,
+                'status' => CommandStatus::PROCESSED->value,
+                'result' => $normalizedResult,
                 'processed_at' => now(),
             ]);
     }
@@ -129,45 +163,11 @@ class IdempotencyRepository implements IdempotencyRepositoryInterface
         CommandInboxModel::query()
             ->where('id', $commandId)
             ->update([
-                'status' => 'failed',
+                'status' => CommandStatus::FAILED->value,
                 'error_message' => $errorMessage,
                 'processed_at' => now(),
             ]);
     }
 
-    public function getResult(string $commandId): array
-    {
-        $maxWaitSeconds = 5;
-        $pollIntervalMs = 100;
-        $maxAttempts = (int)($maxWaitSeconds * 1000 / $pollIntervalMs);
-
-        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-            $command = CommandInboxModel::query()
-                ->where('id', $commandId)
-                ->first();
-
-            if ($command === null) {
-                throw new InvalidArgumentException("Command not found: $commandId");
-            }
-
-            if ($command->status === 'failed') {
-                throw new RuntimeException("Command failed: $command->error_message");
-            }
-
-            if ($command->status === 'processed' && $command->result !== null) {
-                return is_array($command->result) ? $command->result : (array)$command->result;
-            }
-
-            if ($command->status === 'pending') {
-                usleep($pollIntervalMs * 1000);
-                continue;
-            }
-
-            // Status desconhecido
-            throw new RuntimeException("Command in unexpected status: $command->status");
-        }
-
-        throw new RuntimeException("Command result not available yet (timeout after {$maxWaitSeconds}s)");
-    }
 }
 
