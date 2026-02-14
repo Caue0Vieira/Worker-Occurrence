@@ -27,7 +27,6 @@ readonly class DispatchService
      * @throws Exception
      */
     public function createDispatch(Uuid $occurrenceId, string $resourceCode): Dispatch {
-        // Validação de negócio: verificar se já existe despacho com mesmo resource_code na ocorrência
         $existingDispatch = $this->dispatchRepository->findByOccurrenceIdAndResourceCode(
             occurrenceId: $occurrenceId,
             resourceCode: $resourceCode
@@ -35,7 +34,7 @@ readonly class DispatchService
 
         if ($existingDispatch !== null) {
             throw new DomainException(
-                "Já existe um despacho com o resource_code '{$resourceCode}' na ocorrência '{$occurrenceId->toString()}'"
+                "Já existe um despacho com o resource_code '$resourceCode' na ocorrência '{$occurrenceId->toString()}'"
             );
         }
 

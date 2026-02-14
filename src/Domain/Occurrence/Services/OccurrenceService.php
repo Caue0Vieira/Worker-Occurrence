@@ -9,6 +9,7 @@ use Domain\Audit\Repositories\AuditLoggerInterface;
 use Domain\Occurrence\Entities\Occurrence;
 use Domain\Occurrence\Enums\OccurrenceStatus;
 use Domain\Occurrence\Repositories\OccurrenceRepositoryInterface;
+use Domain\Shared\ValueObjects\Uuid;
 
 readonly class OccurrenceService
 {
@@ -34,7 +35,7 @@ readonly class OccurrenceService
         return $this->occurrenceRepository->save($occurrence);
     }
 
-    public function findByIdForUpdate(\Domain\Shared\ValueObjects\Uuid $id): ?Occurrence
+    public function findByIdForUpdate(Uuid $id): ?Occurrence
     {
         return $this->occurrenceRepository->findByIdForUpdate($id);
     }
