@@ -87,6 +87,20 @@ final class InMemoryDispatchRepository implements DispatchRepositoryInterface
     {
         return $this->items[$id->toString()] ?? null;
     }
+
+    public function findByOccurrenceIdAndResourceCode(Uuid $occurrenceId, string $resourceCode): ?Dispatch
+    {
+        foreach ($this->items as $dispatch) {
+            if (
+                $dispatch->occurrenceId()->toString() === $occurrenceId->toString()
+                && $dispatch->resourceCode() === $resourceCode
+            ) {
+                return $dispatch;
+            }
+        }
+
+        return null;
+    }
 }
 
 final class SpyAuditLogger implements AuditLoggerInterface
