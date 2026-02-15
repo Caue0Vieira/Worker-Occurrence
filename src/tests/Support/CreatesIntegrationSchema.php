@@ -85,7 +85,7 @@ trait CreatesIntegrationSchema
                 $table->string('scope_key', 191);
                 $table->string('payload_hash', 64);
                 $table->json('payload');
-                $table->string('status', 16)->default('pending');
+                $table->string('status', 16)->default('RECEIVED');
                 $table->json('result')->nullable();
                 $table->text('error_message')->nullable();
                 $table->timestamp('processed_at')->nullable();

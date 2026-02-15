@@ -25,7 +25,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
         $this->createRequiredTables();
     }
 
-    public function test_job_processes_occurrence_and_marks_command_as_processed(): void
+    public function test_job_processes_occurrence_and_marks_command_as_succeeded(): void
     {
         $occurrenceId = Uuid::generate()->toString();
         $commandId = Uuid::generate()->toString();
@@ -40,7 +40,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
             'scope_key' => $occurrenceId,
             'payload_hash' => hash('sha256', json_encode(['occurrenceId' => $occurrenceId])),
             'payload' => ['occurrenceId' => $occurrenceId],
-            'status' => 'pending',
+            'status' => 'ENQUEUED',
             'expires_at' => now()->addHour(),
         ]);
 
@@ -61,7 +61,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
         );
 
         $command->refresh();
-        $this->assertSame('processed', $command->status);
+        $this->assertSame('SUCCEEDED', $command->status);
         $this->assertNotNull($command->result);
         $this->assertNotNull($command->processed_at);
 
@@ -70,7 +70,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
         $this->assertSame('in_progress', $occurrence->statusCode());
     }
 
-    public function test_job_skips_processing_when_command_already_processed(): void
+    public function test_job_skips_processing_when_command_already_succeeded(): void
     {
         $occurrenceId = Uuid::generate()->toString();
         $commandId = Uuid::generate()->toString();
@@ -85,7 +85,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
             'scope_key' => $occurrenceId,
             'payload_hash' => hash('sha256', json_encode(['occurrenceId' => $occurrenceId])),
             'payload' => ['occurrenceId' => $occurrenceId],
-            'status' => 'processed',
+            'status' => 'SUCCEEDED',
             'result' => ['occurrenceId' => $occurrenceId, 'status' => 'in_progress'],
             'processed_at' => now()->subMinute(),
             'expires_at' => now()->addHour(),
@@ -108,7 +108,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
         );
 
         $command->refresh();
-        $this->assertSame('processed', $command->status);
+        $this->assertSame('SUCCEEDED', $command->status);
         $this->assertSame('in_progress', $command->result['status']);
     }
 
@@ -125,7 +125,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
             'scope_key' => $occurrenceId,
             'payload_hash' => hash('sha256', json_encode(['occurrenceId' => $occurrenceId])),
             'payload' => ['occurrenceId' => $occurrenceId],
-            'status' => 'pending',
+            'status' => 'ENQUEUED',
             'expires_at' => now()->addHour(),
         ]);
 
@@ -151,7 +151,7 @@ class ProcessStartOccurrenceJobTest extends TestCase
         }
 
         $command->refresh();
-        $this->assertSame('failed', $command->status);
+        $this->assertSame('FAILED', $command->status);
         $this->assertNotNull($command->error_message);
     }
 

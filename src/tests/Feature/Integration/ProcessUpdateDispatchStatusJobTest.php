@@ -25,7 +25,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         $this->createRequiredTables();
     }
 
-    public function test_job_updates_dispatch_status_and_marks_command_as_processed(): void
+    public function test_job_updates_dispatch_status_and_marks_command_as_succeeded(): void
     {
         $dispatchId = Uuid::generate()->toString();
         $commandId = Uuid::generate()->toString();
@@ -40,7 +40,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
             'scope_key' => $dispatchId,
             'payload_hash' => hash('sha256', json_encode(['dispatchId' => $dispatchId, 'statusCode' => 'en_route'])),
             'payload' => ['dispatchId' => $dispatchId, 'statusCode' => 'en_route'],
-            'status' => 'pending',
+            'status' => 'ENQUEUED',
             'expires_at' => now()->addHour(),
         ]);
 
@@ -61,7 +61,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         );
 
         $command->refresh();
-        $this->assertSame('processed', $command->status);
+        $this->assertSame('SUCCEEDED', $command->status);
         $this->assertNotNull($command->result);
         $this->assertSame('en_route', $command->result['status']);
 
@@ -70,7 +70,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         $this->assertSame('en_route', $dispatch->statusCode());
     }
 
-    public function test_job_skips_when_command_already_processed(): void
+    public function test_job_skips_when_command_already_succeeded(): void
     {
         $dispatchId = Uuid::generate()->toString();
         $commandId = Uuid::generate()->toString();
@@ -85,7 +85,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
             'scope_key' => $dispatchId,
             'payload_hash' => hash('sha256', json_encode(['dispatchId' => $dispatchId, 'statusCode' => 'en_route'])),
             'payload' => ['dispatchId' => $dispatchId, 'statusCode' => 'en_route'],
-            'status' => 'processed',
+            'status' => 'SUCCEEDED',
             'result' => ['dispatchId' => $dispatchId, 'status' => 'en_route'],
             'processed_at' => now()->subMinute(),
             'expires_at' => now()->addHour(),
@@ -108,7 +108,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         );
 
         $command->refresh();
-        $this->assertSame('processed', $command->status);
+        $this->assertSame('SUCCEEDED', $command->status);
     }
 
     public function test_job_marks_as_failed_on_invalid_status_transition(): void
@@ -126,7 +126,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
             'scope_key' => $dispatchId,
             'payload_hash' => hash('sha256', json_encode(['dispatchId' => $dispatchId, 'statusCode' => 'on_site'])),
             'payload' => ['dispatchId' => $dispatchId, 'statusCode' => 'on_site'],
-            'status' => 'pending',
+            'status' => 'ENQUEUED',
             'expires_at' => now()->addHour(),
         ]);
 
@@ -152,7 +152,7 @@ class ProcessUpdateDispatchStatusJobTest extends TestCase
         }
 
         $command->refresh();
-        $this->assertSame('failed', $command->status);
+        $this->assertSame('FAILED', $command->status);
         $this->assertNotNull($command->error_message);
     }
 

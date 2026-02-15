@@ -59,11 +59,13 @@ abstract class BaseProcessJob implements ShouldQueue
             ]);
 
             if (!$decision->shouldProcess) {
-                Log::info('⏭️ [Worker] Command already processed, skipping', [
+                Log::info('⏭️ [Worker] Command is not in a processable state, skipping', [
                     'commandId' => $decision->commandId,
                 ]);
                 return;
             }
+
+            $idempotencyRepository->markAsProcessing($decision->commandId);
 
             // Hook para validações antes do processamento
             $this->beforeProcess($processor, $decision->commandId);

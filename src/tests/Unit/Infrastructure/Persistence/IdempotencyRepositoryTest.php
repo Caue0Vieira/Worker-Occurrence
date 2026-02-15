@@ -17,7 +17,7 @@ class IdempotencyRepositoryTest extends TestCase
         $this->createCommandInboxTableForTests();
     }
 
-    public function test_idempotency_reuses_processed_command_by_command_id(): void
+    public function test_idempotency_reuses_succeeded_command_by_command_id(): void
     {
         $repository = app(IdempotencyRepository::class);
         $commandId = '018f0e2b-f278-7be1-88f9-cf0d43edc801';
@@ -45,7 +45,7 @@ class IdempotencyRepositoryTest extends TestCase
 
         $this->assertSame($commandId, $second->commandId);
         $this->assertFalse($second->shouldProcess);
-        $this->assertSame('processed', $second->currentStatus);
+        $this->assertSame('SUCCEEDED', $second->currentStatus);
     }
 
     public function test_simulated_concurrency_with_same_key_keeps_single_record(): void
@@ -84,7 +84,7 @@ class IdempotencyRepositoryTest extends TestCase
             $table->string('scope_key', 191);
             $table->string('payload_hash', 64);
             $table->json('payload');
-            $table->string('status', 16)->default('pending');
+            $table->string('status', 16)->default('RECEIVED');
             $table->json('result')->nullable();
             $table->text('error_message')->nullable();
             $table->timestamp('processed_at')->nullable();

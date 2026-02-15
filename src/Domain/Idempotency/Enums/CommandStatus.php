@@ -8,15 +8,17 @@ use Domain\Shared\Exceptions\DomainException;
 
 enum CommandStatus: string
 {
-    case PENDING = 'pending';
-    case PROCESSED = 'processed';
-    case FAILED = 'failed';
+    case RECEIVED = 'RECEIVED';
+    case ENQUEUED = 'ENQUEUED';
+    case PROCESSING = 'PROCESSING';
+    case SUCCEEDED = 'SUCCEEDED';
+    case FAILED = 'FAILED';
 
-    public function shouldDispatch(): bool
+    public function shouldProcessInWorker(): bool
     {
         return match ($this) {
-            self::PENDING, self::FAILED => true,
-            self::PROCESSED => false,
+            self::RECEIVED, self::ENQUEUED, self::FAILED => true,
+            self::PROCESSING, self::SUCCEEDED => false,
         };
     }
 
@@ -25,7 +27,14 @@ enum CommandStatus: string
      */
     public static function fromString(string $status): self
     {
-        return self::tryFrom($status)
+        $normalized = match (strtolower($status)) {
+            'pending' => self::ENQUEUED->value,
+            'processed' => self::SUCCEEDED->value,
+            'failed' => self::FAILED->value,
+            default => $status,
+        };
+
+        return self::tryFrom($normalized)
             ?? throw new DomainException("Invalid command status: $status");
     }
 }

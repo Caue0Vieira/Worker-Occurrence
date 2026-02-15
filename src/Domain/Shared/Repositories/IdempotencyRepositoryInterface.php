@@ -32,6 +32,8 @@ interface IdempotencyRepositoryInterface
         ?string $commandId = null
     ): IdempotencyDecision;
 
+    public function markAsProcessing(string $commandId): void;
+
     /**
      * Marca um comando como processado
      *

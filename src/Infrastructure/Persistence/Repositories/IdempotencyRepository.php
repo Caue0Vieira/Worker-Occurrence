@@ -48,7 +48,7 @@ final class IdempotencyRepository implements IdempotencyRepositoryInterface
                     $status = CommandStatus::fromString($existingById->status);
                     return new IdempotencyDecision(
                         commandId: $existingById->id,
-                        shouldProcess: $status === CommandStatus::PENDING,
+                        shouldProcess: $status->shouldProcessInWorker(),
                         currentStatus: $existingById->status
                     );
                 }
@@ -69,7 +69,7 @@ final class IdempotencyRepository implements IdempotencyRepositoryInterface
                 $status = CommandStatus::fromString($existing->status);
                 return new IdempotencyDecision(
                     commandId: $existing->id,
-                    shouldProcess: $status === CommandStatus::PENDING,
+                    shouldProcess: $status->shouldProcessInWorker(),
                     currentStatus: $existing->status
                 );
             }
@@ -84,16 +84,31 @@ final class IdempotencyRepository implements IdempotencyRepositoryInterface
                 'scope_key' => $scopeKey,
                 'payload_hash' => $payloadHash,
                 'payload' => $payload,
-                'status' => CommandStatus::PENDING->value,
+                'status' => CommandStatus::RECEIVED->value,
                 'expires_at' => $expiresAt,
             ]);
 
             return new IdempotencyDecision(
                 commandId: $resolvedCommandId,
                 shouldProcess: true,
-                currentStatus: CommandStatus::PENDING->value
+                currentStatus: CommandStatus::RECEIVED->value
             );
         });
+    }
+
+    public function markAsProcessing(string $commandId): void
+    {
+        CommandInboxModel::query()
+            ->where('id', $commandId)
+            ->whereIn('status', [
+                CommandStatus::RECEIVED->value,
+                CommandStatus::ENQUEUED->value,
+                CommandStatus::FAILED->value,
+            ])
+            ->update([
+                'status' => CommandStatus::PROCESSING->value,
+                'updated_at' => now(),
+            ]);
     }
 
     private function normalizeIdempotencyKey(string $idempotencyKey): string
@@ -152,7 +167,7 @@ final class IdempotencyRepository implements IdempotencyRepositoryInterface
         CommandInboxModel::query()
             ->where('id', $commandId)
             ->update([
-                'status' => CommandStatus::PROCESSED->value,
+                'status' => CommandStatus::SUCCEEDED->value,
                 'result' => $normalizedResult,
                 'processed_at' => now(),
             ]);
