@@ -28,8 +28,3 @@ services:
       && php artisan queue:work
       && supervisord
       "
-
-networks:
-  default:
-    external: true
-    name: internal
