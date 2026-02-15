@@ -65,7 +65,14 @@ abstract class BaseProcessJob implements ShouldQueue
                 return;
             }
 
-            $idempotencyRepository->markAsProcessing($decision->commandId);
+            $processingLocked = $idempotencyRepository->markAsProcessing($decision->commandId);
+            if (!$processingLocked) {
+                Log::info('⏭️ [Worker] Command already processing or completed, skipping duplicated delivery', [
+                    'commandId' => $decision->commandId,
+                    'currentStatus' => $decision->currentStatus,
+                ]);
+                return;
+            }
 
             // Hook para validações antes do processamento
             $this->beforeProcess($processor, $decision->commandId);

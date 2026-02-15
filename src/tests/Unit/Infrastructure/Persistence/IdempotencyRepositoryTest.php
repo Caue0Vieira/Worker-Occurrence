@@ -72,6 +72,45 @@ class IdempotencyRepositoryTest extends TestCase
         $this->assertDatabaseCount('command_inbox', 1);
     }
 
+    public function test_mark_as_processing_is_atomic_and_only_first_transition_succeeds(): void
+    {
+        $repository = app(IdempotencyRepository::class);
+        $commandId = '018f0e2b-f278-7be1-88f9-cf0d43edc900';
+
+        $registration = $repository->checkOrRegister(
+            idempotencyKey: 'idem-worker-processing-lock-01',
+            source: 'internal_system',
+            type: 'start_occurrence',
+            scopeKey: 'occ-processing-lock-1',
+            payload: ['occurrenceId' => 'occ-processing-lock-1'],
+            commandId: $commandId,
+        );
+
+        $this->assertTrue($registration->shouldProcess);
+
+        $firstTransition = $repository->markAsProcessing($commandId);
+        $secondTransition = $repository->markAsProcessing($commandId);
+
+        $this->assertTrue($firstTransition);
+        $this->assertFalse($secondTransition);
+        $this->assertDatabaseHas('command_inbox', [
+            'id' => $commandId,
+            'status' => 'PROCESSING',
+        ]);
+
+        $decisionAfterLock = $repository->checkOrRegister(
+            idempotencyKey: 'idem-worker-processing-lock-01',
+            source: 'internal_system',
+            type: 'start_occurrence',
+            scopeKey: 'occ-processing-lock-1',
+            payload: ['occurrenceId' => 'occ-processing-lock-1'],
+            commandId: $commandId,
+        );
+
+        $this->assertFalse($decisionAfterLock->shouldProcess);
+        $this->assertSame('PROCESSING', $decisionAfterLock->currentStatus);
+    }
+
     private function createCommandInboxTableForTests(): void
     {
         Schema::dropIfExists('command_inbox');

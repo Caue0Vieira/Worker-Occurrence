@@ -32,7 +32,11 @@ interface IdempotencyRepositoryInterface
         ?string $commandId = null
     ): IdempotencyDecision;
 
-    public function markAsProcessing(string $commandId): void;
+    /**
+     * Tenta transicionar um comando para PROCESSING de forma atômica.
+     * Retorna true apenas quando a linha foi efetivamente atualizada.
+     */
+    public function markAsProcessing(string $commandId): bool;
 
     /**
      * Marca um comando como processado

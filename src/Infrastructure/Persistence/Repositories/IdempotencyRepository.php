@@ -15,7 +15,7 @@ use InvalidArgumentException;
 use JsonSerializable;
 use JsonException;
 
-final class IdempotencyRepository implements IdempotencyRepositoryInterface
+class IdempotencyRepository implements IdempotencyRepositoryInterface
 {
     /**
      * @throws JsonException
@@ -96,9 +96,9 @@ final class IdempotencyRepository implements IdempotencyRepositoryInterface
         });
     }
 
-    public function markAsProcessing(string $commandId): void
+    public function markAsProcessing(string $commandId): bool
     {
-        CommandInboxModel::query()
+        $updatedRows = CommandInboxModel::query()
             ->where('id', $commandId)
             ->whereIn('status', [
                 CommandStatus::RECEIVED->value,
@@ -109,6 +109,8 @@ final class IdempotencyRepository implements IdempotencyRepositoryInterface
                 'status' => CommandStatus::PROCESSING->value,
                 'updated_at' => now(),
             ]);
+
+        return $updatedRows > 0;
     }
 
     private function normalizeIdempotencyKey(string $idempotencyKey): string
