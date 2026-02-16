@@ -76,6 +76,31 @@ readonly class OccurrenceService
         return $updated;
     }
 
+    public function cancelOccurrence(Occurrence $occurrence): Occurrence
+    {
+        $before = ['status_code' => $occurrence->statusCode()];
+        $updated = $this->transition($occurrence, OccurrenceStatus::CANCELLED);
+        $after = ['status_code' => $updated->statusCode()];
+
+        $currentStatus = $before['status_code'];
+        $transitionMeta = match ($currentStatus) {
+            'reported' => 'reported -> cancelled',
+            'in_progress' => 'in_progress -> cancelled',
+            default => "{$currentStatus} -> cancelled",
+        };
+
+        $this->auditLogger->log(
+            entityType: 'occurrence',
+            entityId: $updated->id()->toString(),
+            action: 'status_changed',
+            before: $before,
+            after: $after,
+            meta: ['transition' => $transitionMeta]
+        );
+
+        return $updated;
+    }
+
     private function transition(Occurrence $occurrence, OccurrenceStatus $newStatus): Occurrence
     {
         $currentStatus = OccurrenceStatus::fromString($occurrence->statusCode());

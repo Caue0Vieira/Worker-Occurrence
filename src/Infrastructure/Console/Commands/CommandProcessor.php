@@ -27,6 +27,7 @@ readonly class CommandProcessor
             'create_occurrence' => $this->processCreateOccurrence($data),
             'start_occurrence' => $this->processStartOccurrence($data),
             'resolve_occurrence' => $this->processResolveOccurrence($data),
+            'cancel_occurrence' => $this->processCancelOccurrence($data),
             'create_dispatch' => $this->processCreateDispatch($data),
             'close_dispatch' => $this->processCloseDispatch($data),
             'update_dispatch_status' => $this->processUpdateDispatchStatus($data),
@@ -92,6 +93,28 @@ readonly class CommandProcessor
         }
 
         $updated = $this->occurrenceService->resolveOccurrence($occurrence);
+        $this->occurrenceListCacheInvalidator->invalidate();
+
+        return [
+            'occurrenceId' => $updated->id()->toString(),
+            'status' => $updated->statusCode(),
+            'commandId' => $data['commandId'] ?? null,
+        ];
+    }
+
+    /**
+     * Processa cancelamento de ocorrência
+     */
+    private function processCancelOccurrence(array $data): array
+    {
+        $occurrenceId = Uuid::fromString($data['occurrenceId']);
+        $occurrence = $this->occurrenceService->findByIdForUpdate($occurrenceId);
+
+        if ($occurrence === null) {
+            throw new InvalidArgumentException("Occurrence not found: {$data['occurrenceId']}");
+        }
+
+        $updated = $this->occurrenceService->cancelOccurrence($occurrence);
         $this->occurrenceListCacheInvalidator->invalidate();
 
         return [
