@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Domain\Occurrence\Entities;
 
 use DateTimeImmutable;
+use Domain\Dispatch\Entities\Dispatch;
 use Domain\Shared\ValueObjects\Uuid;
 use Exception;
 

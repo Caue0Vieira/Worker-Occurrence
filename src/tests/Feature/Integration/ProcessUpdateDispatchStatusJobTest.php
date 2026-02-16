@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature\Integration;
 
 use App\Jobs\ProcessUpdateDispatchStatusJob;
-use Domain\Occurrence\Repositories\DispatchRepositoryInterface;
+use Domain\Dispatch\Repositories\DispatchRepositoryInterface;
 use Domain\Shared\Repositories\IdempotencyRepositoryInterface;
 use Domain\Shared\ValueObjects\Uuid;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Infrastructure\Persistence\Models\CommandInboxModel;
-use Tests\TestCase;
 use Tests\Support\CreatesIntegrationSchema;
+use Tests\TestCase;
 
 class ProcessUpdateDispatchStatusJobTest extends TestCase
 {

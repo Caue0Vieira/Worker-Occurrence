@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Domain\Occurrence;
 
 use Domain\Audit\Repositories\AuditLoggerInterface;
-use Domain\Occurrence\Entities\Dispatch;
-use Domain\Occurrence\Repositories\DispatchRepositoryInterface;
-use Domain\Occurrence\Services\DispatchService;
+use Domain\Dispatch\Entities\Dispatch;
+use Domain\Dispatch\Repositories\DispatchRepositoryInterface;
+use Domain\Dispatch\Service\DispatchService;
 use Domain\Shared\Exceptions\DomainException;
 use Domain\Shared\ValueObjects\Uuid;
 use Tests\TestCase;
@@ -95,6 +95,17 @@ final class InMemoryDispatchRepository implements DispatchRepositoryInterface
                 $dispatch->occurrenceId()->toString() === $occurrenceId->toString()
                 && $dispatch->resourceCode() === $resourceCode
             ) {
+                return $dispatch;
+            }
+        }
+
+        return null;
+    }
+
+    public function findByResourceCode(string $resourceCode): ?Dispatch
+    {
+        foreach ($this->items as $dispatch) {
+            if ($dispatch->resourceCode() === $resourceCode) {
                 return $dispatch;
             }
         }

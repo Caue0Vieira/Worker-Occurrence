@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Domain\Occurrence\Enums;
+namespace Domain\Dispatch\Enums;
 
 use Domain\Shared\Exceptions\DomainException;
 

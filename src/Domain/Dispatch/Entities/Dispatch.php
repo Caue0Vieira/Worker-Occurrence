@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Domain\Occurrence\Entities;
+namespace Domain\Dispatch\Entities;
 
 use DateTimeImmutable;
 use Domain\Shared\ValueObjects\Uuid;

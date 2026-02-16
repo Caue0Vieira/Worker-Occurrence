@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Infrastructure\Console\Commands;
 
 use DateTimeImmutable;
-use Domain\Occurrence\Services\DispatchService;
+use Domain\Dispatch\Service\DispatchService;
 use Domain\Occurrence\Services\OccurrenceService;
 use Domain\Shared\ValueObjects\Uuid;
 use Infrastructure\Cache\OccurrenceListCacheInvalidator;

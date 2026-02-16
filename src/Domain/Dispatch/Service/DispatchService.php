@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Domain\Occurrence\Services;
+namespace Domain\Dispatch\Service;
 
 use DateTimeImmutable;
 use Domain\Audit\Repositories\AuditLoggerInterface;
-use Domain\Occurrence\Entities\Dispatch;
-use Domain\Occurrence\Enums\DispatchStatus;
-use Domain\Occurrence\Repositories\DispatchRepositoryInterface;
+use Domain\Dispatch\Entities\Dispatch;
+use Domain\Dispatch\Enums\DispatchStatus;
+use Domain\Dispatch\Repositories\DispatchRepositoryInterface;
 use Domain\Shared\Exceptions\DomainException;
 use Domain\Shared\ValueObjects\Uuid;
 use Exception;
@@ -27,15 +27,35 @@ readonly class DispatchService
      * @throws Exception
      */
     public function createDispatch(Uuid $occurrenceId, string $resourceCode): Dispatch {
-        $existingDispatch = $this->dispatchRepository->findByOccurrenceIdAndResourceCode(
+        // Verifica se já existe despacho na mesma ocorrência
+        $existingDispatchInSameOccurrence = $this->dispatchRepository->findByOccurrenceIdAndResourceCode(
             occurrenceId: $occurrenceId,
             resourceCode: $resourceCode
         );
 
-        if ($existingDispatch !== null) {
+        if ($existingDispatchInSameOccurrence !== null) {
             throw new DomainException(
                 "Já existe um despacho com o resource_code '$resourceCode' na ocorrência '{$occurrenceId->toString()}'"
             );
+        }
+
+        // Verifica se existe despacho com o mesmo resourceCode em outra ocorrência
+        $existingDispatchInOtherOccurrence = $this->dispatchRepository->findByResourceCode($resourceCode);
+
+        if ($existingDispatchInOtherOccurrence !== null) {
+            $existingOccurrenceId = $existingDispatchInOtherOccurrence->occurrenceId()->toString();
+            $existingStatus = DispatchStatus::fromString($existingDispatchInOtherOccurrence->statusCode());
+
+            // Se o despacho existente está em uma ocorrência diferente
+            if ($existingOccurrenceId !== $occurrenceId->toString()) {
+                // Verifica se o status bloqueia a criação em outra ocorrência
+                if (in_array($existingStatus, [DispatchStatus::ASSIGNED, DispatchStatus::EN_ROUTE, DispatchStatus::ON_SITE], true)) {
+                    throw new DomainException(
+                        "Não é possível criar despacho com resource_code '$resourceCode' na ocorrência '{$occurrenceId->toString()}'. " .
+                        "O recurso já está atribuído à ocorrência '$existingOccurrenceId' com status '{$existingStatus->value}'."
+                    );
+                }
+            }
         }
 
         $dispatch = Dispatch::create(

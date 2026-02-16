@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Domain\Audit\Repositories\AuditLoggerInterface;
-use Domain\Occurrence\Repositories\DispatchRepositoryInterface;
+use Domain\Dispatch\Repositories\DispatchRepositoryInterface;
+use Domain\Dispatch\Service\DispatchService;
 use Domain\Occurrence\Repositories\OccurrenceRepositoryInterface;
-use Domain\Occurrence\Services\DispatchService;
 use Domain\Occurrence\Services\OccurrenceService;
 use Domain\Shared\Repositories\IdempotencyRepositoryInterface;
-use Illuminate\Support\ServiceProvider;
 use Domain\Shared\Repository\LoggerInterface;
+use Illuminate\Support\ServiceProvider;
 use Infrastructure\Adapters\AuditLogger;
 use Infrastructure\Adapters\LaravelLoggerAdapter;
 use Infrastructure\Cache\OccurrenceListCacheInvalidator;
