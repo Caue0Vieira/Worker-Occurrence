@@ -27,7 +27,6 @@ class ProcessCancelOccurrenceJob extends BaseProcessJob
 
     protected function beforeProcess(CommandProcessor $processor, string $commandId): void
     {
-        // Validação de estado: verificar se a ocorrência já está em status final antes de cancelar
         $occurrenceService = app(OccurrenceService::class);
         $occurrenceId = Uuid::fromString($this->occurrenceId);
         $occurrence = $occurrenceService->findByIdForUpdate($occurrenceId);

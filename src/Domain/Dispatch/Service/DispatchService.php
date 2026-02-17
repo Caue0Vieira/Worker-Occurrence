@@ -12,6 +12,7 @@ use Domain\Dispatch\Repositories\DispatchRepositoryInterface;
 use Domain\Shared\Exceptions\DomainException;
 use Domain\Shared\ValueObjects\Uuid;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 readonly class DispatchService
 {
@@ -27,7 +28,6 @@ readonly class DispatchService
      * @throws Exception
      */
     public function createDispatch(Uuid $occurrenceId, string $resourceCode): Dispatch {
-        // Verifica se já existe despacho na mesma ocorrência
         $existingDispatchInSameOccurrence = $this->dispatchRepository->findByOccurrenceIdAndResourceCode(
             occurrenceId: $occurrenceId,
             resourceCode: $resourceCode
@@ -39,16 +39,13 @@ readonly class DispatchService
             );
         }
 
-        // Verifica se existe despacho com o mesmo resourceCode em outra ocorrência
         $existingDispatchInOtherOccurrence = $this->dispatchRepository->findByResourceCode($resourceCode);
 
         if ($existingDispatchInOtherOccurrence !== null) {
             $existingOccurrenceId = $existingDispatchInOtherOccurrence->occurrenceId()->toString();
             $existingStatus = DispatchStatus::fromString($existingDispatchInOtherOccurrence->statusCode());
 
-            // Se o despacho existente está em uma ocorrência diferente
             if ($existingOccurrenceId !== $occurrenceId->toString()) {
-                // Verifica se o status bloqueia a criação em outra ocorrência
                 if (in_array($existingStatus, [DispatchStatus::ASSIGNED, DispatchStatus::EN_ROUTE, DispatchStatus::ON_SITE], true)) {
                     throw new DomainException(
                         "Não é possível criar despacho com resource_code '$resourceCode' na ocorrência '{$occurrenceId->toString()}'. " .
@@ -89,10 +86,20 @@ readonly class DispatchService
 
     public function updateStatus(Dispatch $dispatch, string $statusCode): Dispatch
     {
+        Log::info('🟢 [DispatchService] updateStatus called', [
+            'dispatchId' => $dispatch->id()->toString(),
+            'currentStatus' => $dispatch->statusCode(),
+            'newStatus' => $statusCode,
+        ]);
+
         $newStatus = DispatchStatus::fromString($statusCode);
         $before = ['status_code' => $dispatch->statusCode()];
         $updated = $this->transition($dispatch, $newStatus);
         $after = ['status_code' => $updated->statusCode()];
+
+        Log::info('🟢 [DispatchService] Calling auditLogger->log()', [
+            'dispatchId' => $updated->id()->toString(),
+        ]);
 
         $this->auditLogger->log(
             entityType: 'dispatch',

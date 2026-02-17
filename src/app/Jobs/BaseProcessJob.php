@@ -74,7 +74,6 @@ abstract class BaseProcessJob implements ShouldQueue
                 return;
             }
 
-            // Hook para validações antes do processamento
             $this->beforeProcess($processor, $decision->commandId);
 
             $result = $this->processCommand($processor, $decision->commandId);
@@ -108,7 +107,6 @@ abstract class BaseProcessJob implements ShouldQueue
      */
     protected function beforeProcess(CommandProcessor $processor, string $commandId): void
     {
-        // Hook vazio por padrão, pode ser sobrescrito
     }
 
     /**

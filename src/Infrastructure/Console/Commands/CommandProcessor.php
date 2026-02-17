@@ -35,9 +35,6 @@ readonly class CommandProcessor
         };
     }
 
-    /**
-     * Processa criação de ocorrência
-     */
     private function processCreateOccurrence(array $data): array
     {
         $reportedAt = new DateTimeImmutable($data['reportedAt']);
@@ -58,9 +55,6 @@ readonly class CommandProcessor
         ];
     }
 
-    /**
-     * Processa início de ocorrência
-     */
     private function processStartOccurrence(array $data): array
     {
         $occurrenceId = Uuid::fromString($data['occurrenceId']);
@@ -80,9 +74,6 @@ readonly class CommandProcessor
         ];
     }
 
-    /**
-     * Processa resolução de ocorrência
-     */
     private function processResolveOccurrence(array $data): array
     {
         $occurrenceId = Uuid::fromString($data['occurrenceId']);
@@ -102,9 +93,6 @@ readonly class CommandProcessor
         ];
     }
 
-    /**
-     * Processa cancelamento de ocorrência
-     */
     private function processCancelOccurrence(array $data): array
     {
         $occurrenceId = Uuid::fromString($data['occurrenceId']);
@@ -124,9 +112,6 @@ readonly class CommandProcessor
         ];
     }
 
-    /**
-     * Processa criação de despacho
-     */
     private function processCreateDispatch(array $data): array
     {
         $occurrenceId = Uuid::fromString($data['occurrenceId']);
@@ -145,9 +130,6 @@ readonly class CommandProcessor
         ];
     }
 
-    /**
-     * Processa fechamento de despacho
-     */
     private function processCloseDispatch(array $data): array
     {
         $dispatchId = Uuid::fromString($data['dispatchId']);
@@ -166,9 +148,6 @@ readonly class CommandProcessor
         ];
     }
 
-    /**
-     * Processa atualização de status de despacho
-     */
     private function processUpdateDispatchStatus(array $data): array
     {
         $dispatchId = Uuid::fromString($data['dispatchId']);
